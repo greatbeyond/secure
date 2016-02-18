@@ -198,6 +198,24 @@ func TestBasicSSLWithHost(t *testing.T) {
 	expect(t, res.Header().Get("Location"), "https://secure.example.com/foo")
 }
 
+func TestBasicSSLWithXForwardedHost(t *testing.T) {
+	s := New(Options{
+		SSLRedirect:       true,
+		UseXForwardedHost: true,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.com"
+	req.URL.Scheme = "http"
+	req.Header.Add("X-Forwarded-Host", "secure.example.com")
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusMovedPermanently)
+	expect(t, res.Header().Get("Location"), "https://secure.example.com/foo")
+}
+
 func TestBadProxySSL(t *testing.T) {
 	s := New(Options{
 		SSLRedirect: true,
