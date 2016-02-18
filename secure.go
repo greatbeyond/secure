@@ -28,6 +28,8 @@ func defaultBadHostHandler(w http.ResponseWriter, r *http.Request) {
 type Options struct {
 	// AllowedHosts is a list of fully qualified domain names that are allowed. Default is empty list, which allows any and all host names.
 	AllowedHosts []string
+	// ExcludePaths is a list of sub paths to exclude from SSL redirects. Default is empty list, which allows all paths.
+	ExcludePaths []string
 	// If SSLRedirect is set to true, then only allow https requests. Default is false.
 	SSLRedirect bool
 	// If SSLTemporaryRedirect is true, the a 302 will be used while redirecting. Default is false (301).
@@ -121,6 +123,13 @@ func (s *Secure) HandlerFuncWithNext(w http.ResponseWriter, r *http.Request, nex
 
 // Process runs the actual checks and returns an error if the middleware chain should stop.
 func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
+	// Excluded paths check.
+	for _, excludePath := range s.opt.ExcludePaths {
+		if strings.Contains(r.URL.Path, excludePath) {
+			return nil
+		}
+	}
+
 	// Allowed hosts check.
 	if len(s.opt.AllowedHosts) > 0 && !s.opt.IsDevelopment {
 		isGoodHost := false

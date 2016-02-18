@@ -111,6 +111,37 @@ func TestAllowHostsInDevMode(t *testing.T) {
 	expect(t, res.Code, http.StatusOK)
 }
 
+func TestExcludePaths(t *testing.T) {
+	s := New(Options{
+		SSLRedirect:  true,
+		ExcludePaths: []string{"/public/ping/"},
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/public/ping/", nil)
+	req.Host = "www.example.com"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+}
+
+func TestExcludePathsWithSSLRedirect(t *testing.T) {
+	s := New(Options{
+		SSLRedirect:  true,
+		ExcludePaths: []string{"/public/ping/", "/public/healthy/"},
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.com"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusMovedPermanently)
+	expect(t, res.Header().Get("location"), "https://www.example.com/foo")
+}
+
 func TestBadHostHandler(t *testing.T) {
 	s := New(Options{
 		AllowedHosts: []string{"www.example.com", "sub.example.com"},
