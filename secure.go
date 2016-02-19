@@ -36,7 +36,7 @@ type Options struct {
 	SSLTemporaryRedirect bool
 	// SSLHost is the host name that is used to redirect http requests to https. Default is "", which indicates to use the same host.
 	SSLHost string
-	// If UseXForwardedHost is set to true, then use the value of X-Forwarded-Host request header as SSLHost. The SSLHost option overrides this behavior. Default is false.
+	// If UseXForwardedHost is set to true, then use the value of X-Forwarded-Host request header as SSLHost if it exists. The SSLHost option overrides this behavior. Default is false.
 	UseXForwardedHost bool
 	// SSLProxyHeaders is set of header keys with associated values that would indicate a valid https request. Useful when using Nginx: `map[string]string{"X-Forwarded-Proto": "https"}`. Default is blank map.
 	SSLProxyHeaders map[string]string
@@ -166,7 +166,9 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 		if len(s.opt.SSLHost) > 0 {
 			url.Host = s.opt.SSLHost
 		} else if s.opt.UseXForwardedHost {
-			url.Host = r.Header.Get("X-Forwarded-Host")
+			if h := r.Header.Get("X-Forwarded-Host"); h != "" {
+				url.Host = h
+			}
 		}
 
 		status := http.StatusMovedPermanently
